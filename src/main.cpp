@@ -13,7 +13,6 @@
 
 //timekeeping variables
 uint32_t loop700HzTime = micros();
-uint32_t loop700HzPeriodUs = 1428;      //700hz main contol
 
 //stepper motor varialbes
 shuttleMotor forMot;
@@ -21,10 +20,12 @@ uint8_t const forMotCS       = 19;
 uint8_t const forMotSleepPin = 18;
 uint8_t const forMotFaultPin = 17;
 
-shuttleMotor bacMot;
-uint8_t const bacMotCS       = 36;
-uint8_t const bacMotSleepPin = 35;
-uint8_t const bacMotFaultPin = 34;
+//pwm motor
+uint8_t const pwmFrequency   = 50;
+uint8_t const pwmResolution  = 16;
+uint8_t const pwmMotEnPin    = 36;
+uint8_t const pwmMotSigPin   = 35;
+float pwmMotorSpeed          = 0;
 
 //use the alternative SPI interface pins
 uint8_t const spiMosiPin = 0;
@@ -34,6 +35,7 @@ uint8_t const spiClkPin  = 32;
 //control variables
 uint8_t screenLatch = false;
 int delayDurMs      = 5000;
+int setSpeed        = 50;
 
 /*_________________________________________________________________________*/
 /***************************************************************************/
@@ -64,7 +66,15 @@ void setup() {
 
     //--------------------
     screenLatch = true;
-    dispMsg(String(delayDurMs),2); 
+
+    forMot.stopMotor();
+    forMot.enableMotor(false);
+    forMot.motorSpeed(setSpeed);
+
+    dispMsg("Initialized", 1);
+    dispMsg(speedAndDelay(setSpeed, delayDurMs),2); 
+
+    delay(1000);
 }
 
 /*_________________________________________________________________________*/
@@ -72,9 +82,7 @@ void setup() {
 
 void loop() {
 
-    
-
-    //Motion loop
+    //perform normal loop
     if(enableBtSt()&&pauseBtSt()){
 
         if(screenLatch){
@@ -82,17 +90,21 @@ void loop() {
             dispMsg("System Enabled",1);
             screenLatch = false;
         }
+       
+        //moveRight
         forMot.enableMotor(true);
-        forMot.moveRightBlocking(delayDurMs);    
+        delay(50);
+        forMot.moveRightBlocking(delayDurMs);
 
+        //move left 
         forMot.stopMotor();
-        delay(500);
-
-        forMot.moveLeftBlocking(delayDurMs);    
-
+        delay(100);
+        forMot.moveLeftBlocking(delayDurMs);
+        
+        //stop
         forMot.stopMotor();
         forMot.enableMotor(false);
-        delay(2000);
+        delay(500);
     }
     else{
         if(!screenLatch){
@@ -100,43 +112,42 @@ void loop() {
             dispMsg("System locked",1);
             screenLatch = true;
         }
-        forMot.stopMotor();
-        forMot.enableMotor(false);
 
-        //manual motion
+        //adjust motor speed
         if(!enableBtSt()&&!pauseBtSt()){
             if(upBtSt()&&!downBtSt()){
-                forMot.enableMotor(true);
-                forMot.moveRightBlocking(500);
-                delay(500);    
+                setSpeed += 5;
+                if (setSpeed >= 100){setSpeed = 100;}
+                forMot.motorSpeed(setSpeed);
+                dispMsg(speedAndDelay(setSpeed, delayDurMs),2); 
             } else if (!upBtSt()&&downBtSt()){
-                forMot.enableMotor(true);
-                forMot.moveLeftBlocking(500);    
-                delay(500);    
+                setSpeed -= 5;
+                if (setSpeed <= 0){setSpeed = 0;}
+                forMot.motorSpeed(setSpeed);
+                dispMsg(speedAndDelay(setSpeed, delayDurMs),2); 
             }
-        }else if(!enableBtSt()&&pauseBtSt()){
+        //adjust motor delay
+        } else if(!enableBtSt()&&pauseBtSt()){
             if(upBtSt()&&!downBtSt()){
-                delayDurMs += 500;
-                dispMsg(String(delayDurMs),2); 
-                delay(500);    
+                delayDurMs += 100;
+                if (delayDurMs >= 10000){delayDurMs = 10000;}
+                dispMsg(speedAndDelay(setSpeed, delayDurMs),2); 
             } else if (!upBtSt()&&downBtSt()){
-                delayDurMs -= 500;
-                if(delayDurMs<0){delayDurMs = 0;}
-                dispMsg(String(delayDurMs),2); 
-                delay(500);    
+                delayDurMs -= 100;
+                if (delayDurMs <=0){delayDurMs = 0;}
+                dispMsg(speedAndDelay(setSpeed, delayDurMs),2); 
             }
         }
-
-        delay(1000);
+        delay(100);
     }
-
 
 }
 /*_________________________________________________________________________*/
 /***************************************************************************/
 
 boolean loop700Hz(){
-    if(isTimeUp(loop700HzTime, loop700HzPeriodUs)){
+    static const uint32_t loopPeriod = floor(1000000/700);
+    if(isTimeUp(loop700HzTime, loopPeriod)){
         loop700HzTime = micros();
         return true;
     }
@@ -161,6 +172,40 @@ boolean isTimeUp(uint32_t lastTime, uint32_t periodUs) {
 
 void console(String msg){
     Serial.println("main: "+msg);
+}
+/*-------------------------------------------------------------------------*/
+/*-------------------------------------------------------------------------*/
+/*-------------------------------------------------------------------------*/
+
+
+
+
+void enablePwmMotor(boolean enable){
+    if(enable == false || !enableBtSt() || !pauseBtSt()){
+        analogWrite(pwmMotSigPin, 0);
+    } else{
+        analogWrite(pwmMotSigPin, pwmMotorSpeed);
+    }
+}
+/*-------------------------------------------------------------------------*/
+
+void setPwmMotorSpeed(int speed){
+    const static float minSpeed = pow(2,pwmResolution)*pwmFrequency/1000.0 ;//1ms
+    const static float maxSpeed = pow(2,pwmResolution)*pwmFrequency*2/1000.0 ;//2ms
+
+    if(speed>100){speed = 100;}
+    float speedBit = ((maxSpeed - minSpeed)*(speed/100.0) + minSpeed);
+    
+    if(speed == 0){
+        pwmMotorSpeed = 0;
+    } else{
+        pwmMotorSpeed = speedBit;
+    }
+
+    Serial.print("Speed: ");
+    Serial.print(speed);
+    Serial.print("\t Speed Bit: ");
+    Serial.println(speedBit, 2);
 }
 /*-------------------------------------------------------------------------*/
 
