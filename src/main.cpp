@@ -20,13 +20,6 @@ uint8_t const forMotCS       = 19;
 uint8_t const forMotSleepPin = 18;
 uint8_t const forMotFaultPin = 17;
 
-//pwm motor
-uint8_t const pwmFrequency   = 50;
-uint8_t const pwmResolution  = 16;
-uint8_t const pwmMotEnPin    = 36;
-uint8_t const pwmMotSigPin   = 35;
-float pwmMotorSpeed          = 0;
-
 //use the alternative SPI interface pins
 uint8_t const spiMosiPin = 0;
 uint8_t const spiMisoPin = 1;
@@ -59,7 +52,7 @@ void setup() {
     delay(1000);
 
 
-    Serial.println("initialized shuttle system");
+    console("initialized shuttle system");
 
     //reset timers
     loop700HzTime = micros();
@@ -172,40 +165,6 @@ boolean isTimeUp(uint32_t lastTime, uint32_t periodUs) {
 
 void console(String msg){
     Serial.println("main: "+msg);
-}
-/*-------------------------------------------------------------------------*/
-/*-------------------------------------------------------------------------*/
-/*-------------------------------------------------------------------------*/
-
-
-
-
-void enablePwmMotor(boolean enable){
-    if(enable == false || !enableBtSt() || !pauseBtSt()){
-        analogWrite(pwmMotSigPin, 0);
-    } else{
-        analogWrite(pwmMotSigPin, pwmMotorSpeed);
-    }
-}
-/*-------------------------------------------------------------------------*/
-
-void setPwmMotorSpeed(int speed){
-    const static float minSpeed = pow(2,pwmResolution)*pwmFrequency/1000.0 ;//1ms
-    const static float maxSpeed = pow(2,pwmResolution)*pwmFrequency*2/1000.0 ;//2ms
-
-    if(speed>100){speed = 100;}
-    float speedBit = ((maxSpeed - minSpeed)*(speed/100.0) + minSpeed);
-    
-    if(speed == 0){
-        pwmMotorSpeed = 0;
-    } else{
-        pwmMotorSpeed = speedBit;
-    }
-
-    Serial.print("Speed: ");
-    Serial.print(speed);
-    Serial.print("\t Speed Bit: ");
-    Serial.println(speedBit, 2);
 }
 /*-------------------------------------------------------------------------*/
 

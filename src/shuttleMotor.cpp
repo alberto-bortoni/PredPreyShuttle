@@ -83,11 +83,12 @@ void shuttleMotor::moveRightBlocking(int timeMs) {
   mot->setDirection(_direction);
 
   uint32_t ttim = millis() + timeMs;
-
+  uint32_t tperiod = _stPeriodUsMax;
   do {
       mot->step();
-      delayMicroseconds(_stPeriodUs);
-  } while (millis()<ttim);
+      delayMicroseconds(tperiod);
+      if(tperiod>_stPeriodUs){tperiod-=_stepIncrementUs;}
+  } while (millis() < ttim);
 }   
 /*-------------------------------------------------------------------------*/
 
@@ -95,10 +96,11 @@ void shuttleMotor::moveLeftBlocking(int timeMs) {
   mot->setDirection(!_direction);
 
   uint32_t ttim = millis() + timeMs;
-
+  uint32_t tperiod = _stPeriodUsMax;
   do {
       mot->step();
-      delayMicroseconds(_stPeriodUs);
+      delayMicroseconds(tperiod);
+      if(tperiod>_stPeriodUs){tperiod-=_stepIncrementUs;}
   } while (millis() < ttim);
 }
 /*-------------------------------------------------------------------------*/
@@ -116,7 +118,6 @@ boolean shuttleMotor::isFault() {
 }
 /*-------------------------------------------------------------------------*/
 
-
 void shuttleMotor::motorSpeed(int speed) {
   if(speed<0){
     speed = 0;
@@ -125,7 +126,13 @@ void shuttleMotor::motorSpeed(int speed) {
       speed = 100;
     }
 
-  _stPeriodUs = floor((_stPeriodUsMax-_stPeriodUsMin)*(speed/100))+_stPeriodUsMin;
+  //invert since small delay is higher speed
+  _stPeriodUs = int(floor(float((_stPeriodUsMax-_stPeriodUsMin)*((100-speed)/100.0))))+_stPeriodUsMin;
+}
+/*-------------------------------------------------------------------------*/
+
+int shuttleMotor::getMotorSpeed() {
+  return _stPeriodUs;
 }
 /*-------------------------------------------------------------------------*/
 

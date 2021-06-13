@@ -24,6 +24,7 @@ class shuttleMotor
     boolean isFault();
     void motorSpeed(int speed);
     void stepIsr();
+    int getMotorSpeed(void);
   private:
     uint8_t _spics;
     uint8_t _pinsleep;
@@ -32,12 +33,13 @@ class shuttleMotor
     IntervalTimer *isrTimer;
     HighPowerStepperDriver1 *mot;
     bool _direction       = true; //change to false if rotating is opposite
-    int _stepsPerRev      = 200; //from motor datasheet
-    int _currentSet       = 1000; //1500;
-    const int _maxCurrent = 1500;// 2000; //from datasheet
-    int _stPeriodUs       = 1500;
-    int _stPeriodUsMin    = 1500;
-    int _stPeriodUsMax    = 4500;
+    uint32_t _stepsPerRev      = 200;  //from motor datasheet
+    uint32_t _currentSet       = 2000; //1500;
+    const uint32_t _maxCurrent = 2000; // 2000; //from datasheet
+    uint32_t _stepIncrementUs  = 2;
+    uint32_t _stPeriodUs       = 1500;
+    uint32_t _stPeriodUsMin    = 460;
+    uint32_t _stPeriodUsMax    = 1500;
 };
 #endif
 /*-------------------------------------------------------------------------*/

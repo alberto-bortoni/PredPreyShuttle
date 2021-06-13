@@ -26,6 +26,8 @@ void loop();
 boolean loop700Hz();
 boolean isTimeUp(uint32_t lastTime, uint32_t periodUs);
 void console(String msg);
+void enablePwmMotor(boolean enable);
+void setPwmMotorSpeed(int speed);
 
 #endif
 /*EOF*/

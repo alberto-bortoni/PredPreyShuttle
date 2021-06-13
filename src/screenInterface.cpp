@@ -44,6 +44,16 @@ String prepareMsg(String tstr){
 }
 /*-------------------------------------------------------------------------*/
 
+String speedAndDelay(int speed, int delay){
+  static const String speedStr = "S: ";
+  static const String delayStr = " D: ";
+
+  String outStr = speedStr + speed + delayStr + delay; 
+  
+  return outStr;
+}
+/*-------------------------------------------------------------------------*/
+
 void screenTest(){
   lcd.noDisplay();
   delay(500);

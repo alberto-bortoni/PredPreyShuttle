@@ -8,8 +8,6 @@
 #include <LiquidCrystal.h>
 #include <main.h>
 
-//LiquidCrystal lcd(2, 3, 8, 9, 10, 11);
-//LiquidCrystal *lcd;
 
 /*_________________________________________________________________________*/
 /***************************************************************************/
@@ -17,6 +15,7 @@
 void initScreen();
 void dispMsg(String tmsg, uint8_t trow);
 String prepareMsg(String tstr);
+String speedAndDelay(int speed, int delay);
 void screenTest();
 
 #endif
